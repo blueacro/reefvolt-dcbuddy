@@ -1,0 +1,23 @@
+name: ESPHome Builder
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: ESPHome Builder
+      uses: esphome/build-action@v2.0.0
+      with:
+        # YAML file to use
+        yaml_file: firmware/dcbuddy.yml
+        # Version of ESPHome to build
+        version: "2024.5.0"
+
