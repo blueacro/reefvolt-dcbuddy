@@ -16,10 +16,11 @@ esp32:
 # Enable logging
 logger:
   logs:
-    component: ERROR # Supress warning logs from the display drawing for too long
+    component: ERROR # Suppress warning logs from the display drawing for too long
 
 # Enable Home Assistant API
 api:
+  reboot_timeout: 0s # Prevent rebooting if no HA is connected
 
 ota:
 
@@ -28,21 +29,17 @@ wifi:
   ap:
     ssid: "DCBuddy Fallback Hotspot"
     password: "password"
-    
+
 web_server:
   port: 80
   log: False
+
+improv_serial:
 
 captive_portal:
 
 status_led:
   pin: GPIO3
-
-output:
-  - id: power_led
-    platform: gpio
-    pin: GPIO4
-    
 
 font:
     - file: 'five.ttf'
@@ -69,7 +66,7 @@ display:
 
      it.printf(55, 3+offset, id(five), "E");
      it.printf(55+8, offset, id(bigfont), "%1.2f", fabs(id(amps_e).state));
-     
+
      offset += 16;
 
      it.printf(0, 3+offset, id(five), "B");
@@ -77,9 +74,9 @@ display:
 
      it.printf(55, 3+offset, id(five), "F");
      it.printf(55+8, offset, id(bigfont), "%1.2f", fabs(id(amps_f).state));
-     
+
      offset += 16;
-     
+
      it.printf(0, 3+offset, id(five), "C");
      it.printf(8, offset, id(bigfont), "%1.2f", fabs(id(amps_c).state));
 
@@ -88,10 +85,10 @@ display:
 
 
      offset += 16;
-     
+
      it.printf(0, 3+offset, id(five), "D");
      it.printf(8, offset, id(bigfont), "%1.2f", fabs(id(amps_d).state));
-     
+
 
      it.set_rotation(DISPLAY_ROTATION_270_DEGREES);
      it.printf(20, 38, id(five), "AMPS");
@@ -124,7 +121,69 @@ canbus:
           std::string b(x.begin(), x.end());
           ESP_LOGI("can id 500", "%s", &b[0] );
 
-   
+
+globals:
+  - id: power_resets_port
+    type: int[7]
+  - id: max_reset_port
+    type: int
+    initial_value: "10"
+
+
+# Core port logic - one per port assignment to the sensor and the output state,
+# as well as internal and external HomeAssistant switch object wiring
+
+packages:
+  port_a: !include
+    file: 'packages/dcbuddy_port.yaml'
+    vars:
+      port: a
+      port_id: 0
+      ads1115_id: ads1115_1
+      ads1115_multiplexer: 'A0_GND'
+  port_b: !include
+    file: 'packages/dcbuddy_port.yaml'
+    vars:
+      port: b
+      port_id: 1
+      ads1115_id: ads1115_1
+      ads1115_multiplexer: 'A1_GND'
+  port_c: !include
+    file: 'packages/dcbuddy_port.yaml'
+    vars:
+      port: c
+      port_id: 2
+      ads1115_id: ads1115_1
+      ads1115_multiplexer: 'A2_GND'
+  port_d: !include
+    file: 'packages/dcbuddy_port.yaml'
+    vars:
+      port: d
+      port_id: 3
+      ads1115_id: ads1115_1
+      ads1115_multiplexer: 'A3_GND'
+  port_e: !include
+    file: 'packages/dcbuddy_port.yaml'
+    vars:
+      port: e
+      port_id: 4
+      ads1115_id: ads1115_2
+      ads1115_multiplexer: 'A0_GND'
+  port_f: !include
+    file: 'packages/dcbuddy_port.yaml'
+    vars:
+      port: f
+      port_id: 5
+      ads1115_id: ads1115_2
+      ads1115_multiplexer: 'A1_GND'
+  port_g: !include
+    file: 'packages/dcbuddy_port.yaml'
+    vars:
+      port: g
+      port_id: 6
+      ads1115_id: ads1115_2
+      ads1115_multiplexer: 'A2_GND'
+
 sensor:
   - platform: uptime
     name: Uptime Sensor
@@ -132,82 +191,6 @@ sensor:
     name: "WiFi Signal Sensor"
     update_interval: 60s
     id: wifisignal
-  - platform: ads1115
-    ads1115_id: ads1115_1
-    multiplexer: 'A0_GND'
-    gain: 6.144
-    name: "Port A Amps"
-    id: amps_a
-    update_interval: 1s
-    unit_of_measurement: A
-#    on_value: 
- #     then:
-  #      - canbus.send: 
-   #         can_id: 500
-    #        use_extended_id: false
-     #       data: 0x6;
-    filters: 
-      - lambda: return x * (500.0/470.0);
-  - platform: ads1115
-    ads1115_id: ads1115_1
-    multiplexer: 'A1_GND'
-    gain: 6.144
-    name: "Port B Amps"
-    id: amps_b
-    update_interval: 1s
-    unit_of_measurement: A
-    filters: 
-      - lambda: return x * (500.0/470.0);
-  - platform: ads1115
-    ads1115_id: ads1115_1
-    multiplexer: 'A2_GND'
-    gain: 6.144
-    name: "Port C Amps"
-    id: amps_c
-    update_interval: 1s
-    unit_of_measurement: A
-    filters: 
-      - lambda: return x * (500.0/470.0);
-  - platform: ads1115
-    ads1115_id: ads1115_1
-    multiplexer: 'A3_GND'
-    gain: 6.144
-    name: "Port D Amps"
-    id: amps_d
-    update_interval: 1s
-    unit_of_measurement: A
-    filters: 
-      - lambda: return x * (500.0/470.0);
-  - platform: ads1115
-    ads1115_id: ads1115_2
-    multiplexer: 'A0_GND'
-    gain: 6.144
-    name: "Port E Amps"
-    id: amps_e
-    update_interval: 1s
-    unit_of_measurement: A
-    filters: 
-      - lambda: return x * (500.0/470.0);
-  - platform: ads1115
-    ads1115_id: ads1115_2
-    multiplexer: 'A1_GND'
-    gain: 6.144
-    name: "Port F Amps"
-    id: amps_f
-    update_interval: 1s
-    unit_of_measurement: A
-    filters: 
-      - lambda: return x * (500.0/470.0);
-  - platform: ads1115
-    ads1115_id: ads1115_2
-    multiplexer: 'A2_GND'
-    gain: 6.144
-    name: "Port G Amps"
-    id: amps_g
-    update_interval: 1s
-    unit_of_measurement: A
-    filters: 
-      - lambda: return x * (500.0/470.0);
   - platform: ads1115
     ads1115_id: ads1115_2
     multiplexer: 'A3_GND'
@@ -234,74 +217,28 @@ pca9554:
   - id: 'pca9554a_device'
     address: 0x38
 
-# Individual outputs
-switch:
-  - platform: gpio
-    name: "Port A"
-    restore_mode: RESTORE_DEFAULT_ON
-    pin:
-      pca9554: pca9554a_device
-      number: 0
-      mode:
-        output: true
-      inverted: false
-  - platform: gpio
-    name: "Port B"
-    restore_mode: RESTORE_DEFAULT_ON
-    pin:
-      pca9554: pca9554a_device
-      number: 1
-      mode:
-        output: true
-      inverted: false
-  - platform: gpio
-    name: "Port C"
-    restore_mode: RESTORE_DEFAULT_ON
-    pin:
-      pca9554: pca9554a_device
-      number: 2
-      mode:
-        output: true
-      inverted: false
-  - platform: gpio
-    name: "Port D"
-    restore_mode: RESTORE_DEFAULT_ON
-    pin:
-      pca9554: pca9554a_device
-      number: 3
-      mode:
-        output: true
-      inverted: false
-  - platform: gpio
-    name: "Port E"
-    restore_mode: RESTORE_DEFAULT_ON
-    pin:
-      pca9554: pca9554a_device
-      number: 4
-      mode:
-        output: true
-      inverted: false
-  - platform: gpio
-    name: "Port F"
-    restore_mode: RESTORE_DEFAULT_ON
-    pin:
-      pca9554: pca9554a_device
-      number: 5
-      mode:
-        output: true
-      inverted: false
-  - platform: gpio
-    name: "Port G"
-    restore_mode: RESTORE_DEFAULT_ON
-    pin:
-      pca9554: pca9554a_device
-      number: 6
-      mode:
-        output: true
-      inverted: false
+# The singleton port_tun_on_safe mutex script, which will both stagger and delay
+# port turn on commands across the DCbuddy, but also perform voltage level assertions.
+script:
+  - id: port_turn_on_safe
+    mode: queued
+    max_runs: 30
+    parameters:
+      port_obj: 'switch_::Switch*'
+    then:
+      - delay: 0.3s
+      - lambda: |-
+          port_obj->turn_on();
+          ESP_LOGI("turned on switch",  "%s", port_obj->get_name());
 
 
-      
+
+# The actual output pins
+output:
+  - id: power_led
+    platform: gpio
+    pin: GPIO4
+
 text_sensor:
   - platform: wifi_info
     ip_address:
@@ -329,4 +266,3 @@ text_sensor:
       name: ESP Latest Scan Results
     dns_address:
       name: ESP DNS Address
-

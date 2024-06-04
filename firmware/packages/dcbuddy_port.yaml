@@ -1,0 +1,55 @@
+sensor:
+  - platform: ads1115
+    ads1115_id: ${ads1115_id}
+    multiplexer: ${ads1115_multiplexer}
+    gain: 6.144
+    name: "Port ${port | upper} Amps"
+    id: amps_${port}
+    update_interval: 1s
+    unit_of_measurement: A
+    filters:
+      - lambda: return x * (500.0/470.0);
+    on_value_range:
+      - above: 4.70
+        then:
+          - switch.turn_off: port_${port}
+          - lambda: |-
+              id(power_resets_port)[${port_id}]++;
+              ESP_LOGW("Port ${port | upper}", "Over Current Limit Reset, time number %d", id(power_resets_port)[${port_id}]);
+          - delay: 7.5s
+          - if:
+              condition:
+                - lambda: return id(power_resets_port)[${port_id}] < id(max_reset_port) && id(switch_${port}).state;
+              then:
+                - script.execute:
+                    id: port_turn_on_safe
+                    port_obj: '&id(port_${port})'
+
+binary_sensor:
+  - platform: template
+    id: state_${port}
+    name: "Port ${port | upper} State"
+    lambda: return id(port_${port}).state;
+
+# The Home Assistant switch objects
+switch:
+  - platform: template
+    name: "Port ${port | upper}"
+    restore_mode: RESTORE_DEFAULT_ON
+    id: switch_${port}
+    optimistic: True
+    turn_off_action:
+      - switch.turn_off: port_${port}
+    turn_on_action:
+      - script.execute:
+          id: port_turn_on_safe
+          port_obj: '&id(port_${port})'
+# The internal switch states
+  - platform: gpio
+    id: port_${port}
+    pin:
+      pca9554: pca9554a_device
+      number: ${port_id}
+      mode:
+        output: true
+      inverted: false
