@@ -3,7 +3,7 @@ sensor:
     ads1115_id: ${ads1115_id}
     multiplexer: ${ads1115_multiplexer}
     gain: 6.144
-    name: "Port ${port | upper} Amps"
+    name: "Port ${port} Amps"
     id: amps_${port}
     update_interval: 1s
     unit_of_measurement: A
@@ -15,7 +15,7 @@ sensor:
           - switch.turn_off: port_${port}
           - lambda: |-
               id(power_resets_port)[${port_id}]++;
-              ESP_LOGW("Port ${port | upper}", "Over Current Limit Reset, time number %d", id(power_resets_port)[${port_id}]);
+              ESP_LOGW("Port ${port}", "Over Current Limit Reset, time number %d", id(power_resets_port)[${port_id}]);
           - delay: 7.5s
           - if:
               condition:
@@ -28,13 +28,13 @@ sensor:
 binary_sensor:
   - platform: template
     id: state_${port}
-    name: "Port ${port | upper} State"
+    name: "Port ${port} State"
     lambda: return id(port_${port}).state;
 
 # The Home Assistant switch objects
 switch:
   - platform: template
-    name: "Port ${port | upper}"
+    name: "Port ${port}"
     restore_mode: RESTORE_DEFAULT_ON
     id: switch_${port}
     optimistic: True
