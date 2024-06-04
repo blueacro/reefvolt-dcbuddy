@@ -16,10 +16,11 @@ esp32:
 # Enable logging
 logger:
   logs:
-    component: ERROR # Supress warning logs from the display drawing for too long
+    component: ERROR # Suppress warning logs from the display drawing for too long
 
 # Enable Home Assistant API
 api:
+  reboot_timeout: 0s # Prevent rebooting if no HA is connected
 
 ota:
 
@@ -28,21 +29,17 @@ wifi:
   ap:
     ssid: "DCBuddy Fallback Hotspot"
     password: "password"
-    
+
 web_server:
   port: 80
   log: False
 
+improv_serial:
+  
 captive_portal:
 
 status_led:
   pin: GPIO3
-
-output:
-  - id: power_led
-    platform: gpio
-    pin: GPIO4
-    
 
 font:
     - file: 'five.ttf'
@@ -124,7 +121,15 @@ canbus:
           std::string b(x.begin(), x.end());
           ESP_LOGI("can id 500", "%s", &b[0] );
 
-   
+
+globals:
+  - id: power_resets_port
+    type: int[7]
+  - id: max_reset_port
+    type: int
+    initial_value: "10"
+
+
 sensor:
   - platform: uptime
     name: Uptime Sensor
@@ -140,14 +145,21 @@ sensor:
     id: amps_a
     update_interval: 1s
     unit_of_measurement: A
-#    on_value: 
- #     then:
-  #      - canbus.send: 
-   #         can_id: 500
-    #        use_extended_id: false
-     #       data: 0x6;
     filters: 
       - lambda: return x * (500.0/470.0);
+    on_value_range: 
+      - above: 4.70
+        then:
+          - switch.turn_off: port_a
+          - lambda: id(power_resets_port)[0]++;
+          - delay: 7.5s
+          - if:
+              condition:
+                - lambda: return id(power_resets_port)[0] < id(max_reset_port) && id(switch_a).state;
+              then:
+                - script.execute: 
+                    id: port_turn_on_safe
+                    port_id: 0
   - platform: ads1115
     ads1115_id: ads1115_1
     multiplexer: 'A1_GND'
@@ -158,6 +170,19 @@ sensor:
     unit_of_measurement: A
     filters: 
       - lambda: return x * (500.0/470.0);
+    on_value_range: 
+      - above: 4.70
+        then:
+          - switch.turn_off: port_b
+          - lambda: id(power_resets_port)[1]++;
+          - delay: 7.5s
+          - if:
+              condition:
+                - lambda: return id(power_resets_port)[1] < id(max_reset_port) && id(switch_b).state;
+              then:
+                - script.execute: 
+                    id: port_turn_on_safe
+                    port_id: 1
   - platform: ads1115
     ads1115_id: ads1115_1
     multiplexer: 'A2_GND'
@@ -168,6 +193,19 @@ sensor:
     unit_of_measurement: A
     filters: 
       - lambda: return x * (500.0/470.0);
+    on_value_range: 
+      - above: 4.70
+        then:
+          - switch.turn_off: port_c
+          - lambda: id(power_resets_port)[2]++;
+          - delay: 7.5s
+          - if:
+              condition:
+                - lambda: return id(power_resets_port)[2] < id(max_reset_port) && id(switch_c).state;
+              then:
+                - script.execute: 
+                    id: port_turn_on_safe
+                    port_id: 2
   - platform: ads1115
     ads1115_id: ads1115_1
     multiplexer: 'A3_GND'
@@ -178,6 +216,19 @@ sensor:
     unit_of_measurement: A
     filters: 
       - lambda: return x * (500.0/470.0);
+    on_value_range: 
+      - above: 4.70
+        then:
+          - switch.turn_off: port_d
+          - lambda: id(power_resets_port)[3]++;
+          - delay: 7.5s
+          - if:
+              condition:
+                - lambda: return id(power_resets_port)[3] < id(max_reset_port) && id(switch_d).state;
+              then:
+                - script.execute: 
+                    id: port_turn_on_safe
+                    port_id: 3
   - platform: ads1115
     ads1115_id: ads1115_2
     multiplexer: 'A0_GND'
@@ -188,6 +239,19 @@ sensor:
     unit_of_measurement: A
     filters: 
       - lambda: return x * (500.0/470.0);
+    on_value_range: 
+      - above: 4.70
+        then:
+          - switch.turn_off: port_e
+          - lambda: id(power_resets_port)[4]++;
+          - delay: 7.5s
+          - if:
+              condition:
+                - lambda: return id(power_resets_port)[4] < id(max_reset_port) && id(switch_e).state;
+              then:
+                - script.execute: 
+                    id: port_turn_on_safe
+                    port_id: 4
   - platform: ads1115
     ads1115_id: ads1115_2
     multiplexer: 'A1_GND'
@@ -198,6 +262,19 @@ sensor:
     unit_of_measurement: A
     filters: 
       - lambda: return x * (500.0/470.0);
+    on_value_range: 
+      - above: 4.70
+        then:
+          - switch.turn_off: port_f
+          - lambda: id(power_resets_port)[5]++;
+          - delay: 7.5s
+          - if:
+              condition:
+                - lambda: return id(power_resets_port)[5] < id(max_reset_port) && id(switch_f).state;
+              then:
+                - script.execute: 
+                    id: port_turn_on_safe
+                    port_id: 5
   - platform: ads1115
     ads1115_id: ads1115_2
     multiplexer: 'A2_GND'
@@ -208,6 +285,19 @@ sensor:
     unit_of_measurement: A
     filters: 
       - lambda: return x * (500.0/470.0);
+    on_value_range: 
+      - above: 4.70
+        then:
+          - switch.turn_off: port_g
+          - lambda: id(power_resets_port)[6]++;
+          - delay: 7.5s
+          - if:
+              condition:
+                - lambda: return id(power_resets_port)[6] < id(max_reset_port) && id(switch_g).state;
+              then:
+                - script.execute: 
+                    id: port_turn_on_safe
+                    port_id: 6
   - platform: ads1115
     ads1115_id: ads1115_2
     multiplexer: 'A3_GND'
@@ -234,11 +324,150 @@ pca9554:
   - id: 'pca9554a_device'
     address: 0x38
 
-# Individual outputs
+# Actual output status
+binary_sensor:
+  - platform: template
+    id: state_a
+    name: "Port A State"
+    lambda: return id(port_a).state;
+  - platform: template
+    id: state_b
+    name: "Port B State"
+    lambda: return id(port_b).state;
+  - platform: template
+    id: state_c
+    name: "Port C State"
+    lambda: return id(port_c).state;
+  - platform: template
+    id: state_d
+    name: "Port D State"
+    lambda: return id(port_d).state;
+  - platform: template
+    id: state_e
+    name: "Port E State"
+    lambda: return id(port_e).state;
+  - platform: template
+    id: state_f
+    name: "Port F State"
+    lambda: return id(port_f).state;
+  - platform: template
+    id: state_g
+    name: "Port G State"
+    lambda: return id(port_g).state;
+
+script:
+  - id: port_turn_on_safe
+    mode: queued
+    max_runs: 30
+    parameters: 
+      port_id: int
+    then: 
+      - delay: 0.3s
+      - lambda: |-
+          static std::map<int, switch_::Switch*> output_map {
+            { 0, id(port_a) },
+            { 1, id(port_b) },
+            { 2, id(port_c) },
+            { 3, id(port_d) },
+            { 4, id(port_e) },
+            { 5, id(port_f) },
+            { 6, id(port_g) },
+          };
+          auto port = output_map.find(port_id);
+          if (port != output_map.end()) {
+            ESP_LOGI("turn on switch",  "%d", port_id);
+            port->second->turn_on(); // Currently always turn on, would have OVLO/UVLO here
+          }
+          
+
+# The actual output pins
+output:
+  - id: power_led
+    platform: gpio
+    pin: GPIO4
+# The Home Assistant switch objects
 switch:
-  - platform: gpio
+  - platform: template
     name: "Port A"
     restore_mode: RESTORE_DEFAULT_ON
+    id: switch_a
+    optimistic: True
+    turn_off_action: 
+      - switch.turn_off: port_a
+    turn_on_action:
+      - script.execute: 
+          id: port_turn_on_safe
+          port_id: 0
+  - platform: template
+    name: "Port B"
+    restore_mode: RESTORE_DEFAULT_ON
+    id: switch_b
+    optimistic: True
+    turn_off_action: 
+      - switch.turn_off: port_b
+    turn_on_action:
+      - script.execute: 
+          id: port_turn_on_safe
+          port_id: 1
+  - platform: template
+    name: "Port C"
+    restore_mode: RESTORE_DEFAULT_ON
+    id: switch_c
+    optimistic: True
+    turn_off_action: 
+      - switch.turn_off: port_c
+    turn_on_action:
+      - script.execute: 
+          id: port_turn_on_safe
+          port_id: 2
+  - platform: template
+    name: "Port D"
+    restore_mode: RESTORE_DEFAULT_ON
+    id: switch_d
+    optimistic: True
+    turn_off_action: 
+      - switch.turn_off: port_d
+    turn_on_action:
+      - script.execute: 
+          id: port_turn_on_safe
+          port_id: 3
+  - platform: template
+    name: "Port E"
+    restore_mode: RESTORE_DEFAULT_ON
+    id: switch_e
+    optimistic: True
+    turn_off_action: 
+      - switch.turn_off: port_e
+    turn_on_action:
+      - script.execute: 
+          id: port_turn_on_safe
+          port_id: 4
+  - platform: template
+    name: "Port F"
+    restore_mode: RESTORE_DEFAULT_ON
+    id: switch_f
+    optimistic: True
+    turn_off_action: 
+      - switch.turn_off: port_f
+    turn_on_action:
+      - script.execute: 
+          id: port_turn_on_safe
+          port_id: 5
+  - platform: template
+    name: "Port G"
+    restore_mode: RESTORE_DEFAULT_ON
+    id: switch_g
+    optimistic: True
+    turn_off_action: 
+      - switch.turn_off: port_g
+    turn_on_action:
+      - script.execute: 
+          id: port_turn_on_safe
+          port_id: 6
+
+# The internal switch states
+  - platform: gpio
+    id: port_a
     pin:
       pca9554: pca9554a_device
       number: 0
@@ -246,8 +475,7 @@ switch:
         output: true
       inverted: false
   - platform: gpio
-    name: "Port B"
-    restore_mode: RESTORE_DEFAULT_ON
+    id: port_b
     pin:
       pca9554: pca9554a_device
       number: 1
@@ -255,8 +483,7 @@ switch:
         output: true
       inverted: false
   - platform: gpio
-    name: "Port C"
-    restore_mode: RESTORE_DEFAULT_ON
+    id: port_c
     pin:
       pca9554: pca9554a_device
       number: 2
@@ -264,8 +491,7 @@ switch:
         output: true
       inverted: false
   - platform: gpio
-    name: "Port D"
-    restore_mode: RESTORE_DEFAULT_ON
+    id: port_d
     pin:
       pca9554: pca9554a_device
       number: 3
@@ -273,8 +499,7 @@ switch:
         output: true
       inverted: false
   - platform: gpio
-    name: "Port E"
-    restore_mode: RESTORE_DEFAULT_ON
+    id: port_e
     pin:
       pca9554: pca9554a_device
       number: 4
@@ -282,8 +507,7 @@ switch:
         output: true
       inverted: false
   - platform: gpio
-    name: "Port F"
-    restore_mode: RESTORE_DEFAULT_ON
+    id: port_f
     pin:
       pca9554: pca9554a_device
       number: 5
@@ -291,8 +515,7 @@ switch:
         output: true
       inverted: false
   - platform: gpio
-    name: "Port G"
-    restore_mode: RESTORE_DEFAULT_ON
+    id: port_g
     pin:
       pca9554: pca9554a_device
       number: 6
@@ -329,4 +552,3 @@ text_sensor:
       name: ESP Latest Scan Results
     dns_address:
       name: ESP DNS Address
-
