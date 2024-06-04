@@ -13,7 +13,9 @@ sensor:
       - above: 4.70
         then:
           - switch.turn_off: port_${port}
-          - lambda: id(power_resets_port)[${port_id}]++;
+          - lambda: |-
+              id(power_resets_port)[${port_id}]++;
+              ESP_LOGW("Port ${port | upper}", "Over Current Limit Reset, time number %d", id(power_resets_port)[${port_id}]);
           - delay: 7.5s
           - if:
               condition:
@@ -21,7 +23,7 @@ sensor:
               then:
                 - script.execute:
                     id: port_turn_on_safe
-                    port_id: ${port_id}
+                    port_obj: '&id(port_${port})'
 
 binary_sensor:
   - platform: template
@@ -41,7 +43,7 @@ switch:
     turn_on_action:
       - script.execute:
           id: port_turn_on_safe
-          port_id: ${port_id}
+          port_obj: '&id(port_${port})'
 # The internal switch states
   - platform: gpio
     id: port_${port}

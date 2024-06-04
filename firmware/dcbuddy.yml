@@ -224,24 +224,13 @@ script:
     mode: queued
     max_runs: 30
     parameters:
-      port_id: int
+      port_obj: 'switch_::Switch*'
     then:
       - delay: 0.3s
       - lambda: |-
-          static std::map<int, switch_::Switch*> output_map {
-            { 0, id(port_a) },
-            { 1, id(port_b) },
-            { 2, id(port_c) },
-            { 3, id(port_d) },
-            { 4, id(port_e) },
-            { 5, id(port_f) },
-            { 6, id(port_g) },
-          };
-          auto port = output_map.find(port_id);
-          if (port != output_map.end()) {
-            ESP_LOGI("turn on switch",  "%d", port_id);
-            port->second->turn_on(); // Currently always turn on, would have OVLO/UVLO here
-          }
+          port_obj->turn_on();
+          ESP_LOGI("turned on switch",  "%s", port_obj->get_name());
+
 
 
 # The actual output pins
