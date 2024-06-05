@@ -9,6 +9,9 @@ sensor:
     unit_of_measurement: A
     filters:
       - lambda: return x * (500.0/470.0);
+      - or:
+        - throttle: 15s # Reduce the update rate to HA if things don't change
+        - delta: 0.005 # Or 5mA difference
     on_value_range:
       - above: 4.70
         then:
