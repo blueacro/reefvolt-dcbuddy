@@ -84,6 +84,7 @@ number:
     entity_category: "config"
     unit_of_measurement: "V"
     device_class: voltage
+    mode: box
     on_value:
       then:
         - script.execute: port_${port}_voltage_update
@@ -99,6 +100,7 @@ number:
     entity_category: "config"
     unit_of_measurement: "V"
     device_class: voltage
+    mode: box
     on_value:
       then:
         - script.execute: port_${port}_voltage_update
