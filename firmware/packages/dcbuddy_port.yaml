@@ -13,7 +13,7 @@ sensor:
         - throttle: 15s # Reduce the update rate to HA if things don't change
         - delta: 0.005 # Or 5mA difference
     on_value_range:
-      - above: 4.70
+      - above: 4.40
         then:
           - switch.turn_off: port_${port}
           - lambda: |-
@@ -56,3 +56,28 @@ switch:
       mode:
         output: true
       inverted: false
+
+script:
+  - id: port_reconcile_${port}
+    mode: queued
+    max_runs: 30
+    then:
+      - lambda: |-
+          if (id(switch_${port}).state != id(port_${port}).state) {
+            id(switch_${port}).turn_on();
+          }
+
+# A script execution to converge intended states with the port states, e.g. in
+# case OCP resets or too many turn_on_safe calls were queued
+interval:
+  - interval: 1min
+    then:
+      - if:
+          condition:
+            and:
+              - lambda: return id(switch_${port}).state;
+              - lambda: return id(power_resets_port)[${port_id}] < id(max_reset_port);
+          then:
+          - script.execute: 
+              id: port_turn_on_safe
+              port_obj: '&id(port_${port})'
