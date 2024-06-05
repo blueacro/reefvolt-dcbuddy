@@ -33,6 +33,17 @@ logger:
 # Enable Home Assistant API
 api:
   reboot_timeout: 0s # Prevent rebooting if no HA is connected
+  services:
+    - service: reset_ocp # Service to reset all OCP states
+      then:
+        - lambda: |-
+            id(power_resets_port)[0] = 0;
+            id(power_resets_port)[1] = 0;
+            id(power_resets_port)[2] = 0;
+            id(power_resets_port)[3] = 0;
+            id(power_resets_port)[4] = 0;
+            id(power_resets_port)[5] = 0;
+            id(power_resets_port)[6] = 0;
 
 ota:
 
@@ -246,8 +257,6 @@ script:
           port_obj->turn_on();
           ESP_LOGI("turned on switch",  "%s", port_obj->get_name());
 
-
-
 # The actual output pins
 output:
   - id: power_led
@@ -261,6 +270,14 @@ text_sensor:
     entity_category: "diagnostic"
     lambda: |-
       return {"GIT_VERSION_FIELD"};
+  - platform: template
+    name: "OCP Count"
+    entity_category: "diagnostic"
+    lambda: |-
+      return {("A:" + String(id(power_resets_port)[0]) + " B:" + String(id(power_resets_port)[1]) + 
+      " C:" + String(id(power_resets_port)[2]) + " D:" + String(id(power_resets_port)[3]) + 
+      " E:" + String(id(power_resets_port)[4]) + " F:" + String(id(power_resets_port)[5]) + 
+      " G:" + String(id(power_resets_port)[6])).c_str() };
   - platform: wifi_info
     ip_address:
       name: ESP IP Address
