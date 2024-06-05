@@ -7,6 +7,7 @@ sensor:
     id: amps_${port}
     update_interval: 1s
     unit_of_measurement: A
+    device_class: current
     filters:
       - lambda: return x * (500.0/470.0);
       - or:
@@ -25,8 +26,7 @@ sensor:
                 - lambda: return id(power_resets_port)[${port_id}] < id(max_reset_port) && id(switch_${port}).state;
               then:
                 - script.execute:
-                    id: port_turn_on_safe
-                    port_obj: '&id(port_${port})'
+                    id: port_${port}_turn_on_safe
 
 binary_sensor:
   - platform: template
@@ -45,8 +45,7 @@ switch:
       - switch.turn_off: port_${port}
     turn_on_action:
       - script.execute:
-          id: port_turn_on_safe
-          port_obj: '&id(port_${port})'
+          id: port_${port}_turn_on_safe
 # The internal switch states
   - platform: gpio
     id: port_${port}
@@ -57,20 +56,11 @@ switch:
         output: true
       inverted: false
 
-script:
-  - id: port_reconcile_${port}
-    mode: queued
-    max_runs: 30
-    then:
-      - lambda: |-
-          if (id(switch_${port}).state != id(port_${port}).state) {
-            id(switch_${port}).turn_on();
-          }
 
 # A script execution to converge intended states with the port states, e.g. in
 # case OCP resets or too many turn_on_safe calls were queued
 interval:
-  - interval: 1min
+  - interval: 15s
     then:
       - if:
           condition:
@@ -78,6 +68,74 @@ interval:
               - lambda: return id(switch_${port}).state;
               - lambda: return id(power_resets_port)[${port_id}] < id(max_reset_port);
           then:
-          - script.execute: 
-              id: port_turn_on_safe
-              port_obj: '&id(port_${port})'
+          - script.execute:
+              id: port_${port}_turn_on_safe
+
+number:
+  - platform: template
+    id: port_${port}_min_voltage
+    name: "Port ${port} Min Voltage"
+    optimistic: true
+    min_value: 0
+    max_value: 40
+    initial_value: 10
+    restore_value: true
+    step: 1
+    entity_category: "config"
+    unit_of_measurement: "V"
+    device_class: voltage
+    on_value:
+      then:
+        - script.execute: port_${port}_voltage_update
+  - platform: template
+    id: port_${port}_max_voltage
+    name: "Port ${port} Max Voltage"
+    optimistic: true
+    min_value: 0
+    max_value: 40
+    initial_value: 28
+    restore_value: true
+    step: 1
+    entity_category: "config"
+    unit_of_measurement: "V"
+    device_class: voltage
+    on_value:
+      then:
+        - script.execute: port_${port}_voltage_update
+
+
+script:
+  - id: port_${port}_voltage_update
+    then:
+      - lambda: |-
+          auto min_voltage = id(port_${port}_min_voltage).state;
+          auto max_voltage = id(port_${port}_max_voltage).state;
+          auto voltage = id(volts_in).state;
+
+          if (voltage < min_voltage || voltage > max_voltage) {
+            ESP_LOGW("Port ${port}", "Voltage out of range, turning off, voltage: %.2f, min: %.2f, max: %.2f", voltage, min_voltage, max_voltage);
+            id(port_${port})->turn_off();
+            return;
+          }
+
+  - id: port_${port}_turn_on_safe
+    mode: queued
+    max_runs: 10
+    then:
+      - script.execute: port_semaphore
+      - script.wait: port_semaphore
+      - lambda: |-
+          auto port_obj = id(port_${port});
+          auto min_voltage = id(port_${port}_min_voltage).state;
+          auto max_voltage = id(port_${port}_max_voltage).state;
+          auto voltage = id(volts_in).state;
+          if (isnan(voltage)) {
+            ESP_LOGW("Port ${port}", "Voltage is NaN, not enabling port");
+            return;
+          }
+          if (voltage < min_voltage || voltage > max_voltage) {
+            ESP_LOGW("Port ${port}", "Voltage out of range, not turning on, voltage: %.2f, min: %.2f, max: %.2f", voltage, min_voltage, max_voltage);
+            return;
+          }
+          port_obj->turn_on();
+          ESP_LOGI("turned on switch",  "%s", port_obj->get_name());
