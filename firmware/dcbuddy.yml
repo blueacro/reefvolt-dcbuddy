@@ -212,6 +212,9 @@ sensor:
     update_interval: 1s
     filters:
       - lambda: return x * ((10.0+1.2)/1.2);
+      - or:
+        - throttle: 15s # Reduce the update rate to HA if things don't change
+        - delta: 0.05 # Or 50mV difference
 
 i2c:
   sda: GPIO5
