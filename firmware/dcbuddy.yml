@@ -1,12 +1,24 @@
 esphome:
   name: dcbuddy
+  comment: "Aquarium port controller"
+  project:
+    name: reefvolt.dcbuddy
+    version: "GIT_VERSION_FIELD"
+  name_add_mac_suffix: true
   platformio_options:
     board_build.flash_mode: dio
-  friendly_name: dcbuddy
+  friendly_name: DCBuddy
   on_boot:
     priority: 600
     then:
       - output.turn_on: power_led
+
+dashboard_import:
+  package_import_url: github://blueacro/reefvolt-dcbuddy/firmware/dcbuddy.yaml@main
+  import_full_config: false # or true
+
+network:
+    enable_ipv6: true
 
 esp32:
   board: esp32-c3-devkitm-1
@@ -240,6 +252,12 @@ output:
     pin: GPIO4
 
 text_sensor:
+  - platform: template
+    name: "DCBuddy Firmware Version"
+    id: dcbuddy_version
+    entity_category: "diagnostic"
+    lambda: |-
+      return {"GIT_VERSION_FIELD"};
   - platform: wifi_info
     ip_address:
       name: ESP IP Address
