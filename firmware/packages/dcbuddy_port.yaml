@@ -124,8 +124,13 @@ script:
     mode: queued
     max_runs: 10
     then:
+      - while:
+          condition:
+            - script.is_running: port_semaphore
+          then:
+            - script.wait: port_semaphore
+            - delay: !lambda "return rand() % 100;"
       - script.execute: port_semaphore
-      - script.wait: port_semaphore
       - lambda: |-
           auto port_obj = id(port_${port});
           auto min_voltage = id(port_${port}_min_voltage).state;

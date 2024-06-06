@@ -257,8 +257,7 @@ pca9554:
 # mutex in script.wait
 script:
   - id: port_semaphore
-    mode: queued
-    max_runs: 50
+    mode: single
     then:
       - delay: 0.3s
 
