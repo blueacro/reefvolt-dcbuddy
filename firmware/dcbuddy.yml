@@ -221,6 +221,15 @@ sensor:
     name: "Input Voltage"
     id: volts_in
     update_interval: 1s
+    on_value:
+      then:
+        - script.execute: port_A_voltage_update
+        - script.execute: port_B_voltage_update
+        - script.execute: port_C_voltage_update
+        - script.execute: port_D_voltage_update
+        - script.execute: port_E_voltage_update
+        - script.execute: port_F_voltage_update
+        - script.execute: port_G_voltage_update
     filters:
       - lambda: return x * ((10.0+1.2)/1.2);
       - or:
@@ -243,19 +252,14 @@ pca9554:
   - id: 'pca9554a_device'
     address: 0x38
 
-# The singleton port_tun_on_safe mutex script, which will both stagger and delay
-# port turn on commands across the DCbuddy, but also perform voltage level assertions.
+# A singleton delay sempahore script - every power on is staggered by 300ms and
+# only one turn on script execution can run at the same time if covered by this
+# mutex in script.wait
 script:
-  - id: port_turn_on_safe
-    mode: queued
-    max_runs: 30
-    parameters:
-      port_obj: 'switch_::Switch*'
+  - id: port_semaphore
+    mode: single
     then:
       - delay: 0.3s
-      - lambda: |-
-          port_obj->turn_on();
-          ESP_LOGI("turned on switch",  "%s", port_obj->get_name());
 
 # The actual output pins
 output:
