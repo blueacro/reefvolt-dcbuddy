@@ -144,9 +144,11 @@ script:
             ESP_LOGW("Port ${port}", "Voltage out of range, not turning on, voltage: %.2f, min: %.2f, max: %.2f", voltage, min_voltage, max_voltage);
             return;
           }
+
           auto prior = port_obj->state;
-          port_obj->turn_on();
-          if (prior != port_obj->state) {
+
+          if (!prior) {
+            port_obj->turn_on();
             ESP_LOGI("Port ${port}", "Turned on port");
             return;
           }
