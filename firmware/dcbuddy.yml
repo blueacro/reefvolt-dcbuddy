@@ -53,6 +53,8 @@ wifi:
     ssid: "DCBuddy Fallback Hotspot"
     password: "password"
 
+prometheus:
+
 web_server:
   port: 80
   log: False
