@@ -58,6 +58,7 @@ prometheus:
 web_server:
   port: 80
   log: False
+  version: 3
 
 improv_serial:
 
