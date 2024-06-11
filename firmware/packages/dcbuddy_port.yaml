@@ -16,17 +16,7 @@ sensor:
     on_value_range:
       - above: 4.40
         then:
-          - switch.turn_off: port_${port}
-          - lambda: |-
-              id(power_resets_port)[${port_id}]++;
-              ESP_LOGW("Port ${port}", "Over Current Limit Reset, time number %d", id(power_resets_port)[${port_id}]);
-          - delay: 7.5s
-          - if:
-              condition:
-                - lambda: return id(power_resets_port)[${port_id}] < id(max_reset_port) && id(switch_${port}).state;
-              then:
-                - script.execute:
-                    id: port_${port}_turn_on_safe
+          - script.execute: port_${port}_ocp
 
 binary_sensor:
   - platform: template
@@ -67,6 +57,12 @@ interval:
             and:
               - lambda: return id(switch_${port}).state;
               - lambda: return id(power_resets_port)[${port_id}] < id(max_reset_port);
+              - not:
+                - script.is_running: port_${port}_turn_on_safe
+              - not:
+                - script.is_running: port_${port}_ocp
+              - not:
+                - script.is_running: port_${port}_voltage_update
           then:
           - script.execute:
               id: port_${port}_turn_on_safe
@@ -107,6 +103,20 @@ number:
 
 
 script:
+  - id: port_${port}_ocp
+    then:
+    - switch.turn_off: port_${port}
+    - lambda: |-
+              id(power_resets_port)[${port_id}]++;
+              ESP_LOGW("Port ${port}", "Over Current Limit Reset, time number %d", id(power_resets_port)[${port_id}]);
+    - delay: 7.5s
+    - if:
+        condition:
+          - lambda: return id(power_resets_port)[${port_id}] < id(max_reset_port) && id(switch_${port}).state;
+        then:
+        - script.execute:
+            id: port_${port}_turn_on_safe
+
   - id: port_${port}_voltage_update
     then:
       - lambda: |-
